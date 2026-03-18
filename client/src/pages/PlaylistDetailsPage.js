@@ -3,6 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Thumbnail from '../components/Thumbnail';
 import { showToast } from '../utils/utils';
 
+// Base path for API calls and assets (set during build via PUBLIC_URL)
+const basePath = process.env.PUBLIC_URL || '';
+
+
 function PlaylistDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -14,7 +18,7 @@ function PlaylistDetailsPage() {
   const [testingRegex, setTestingRegex] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/playlists/${id}`)
+    fetch(`${basePath}/api/playlists/${id}`)
       .then(res => res.json())
       .then(data => {
         setPlaylist(data.playlist);
@@ -25,11 +29,11 @@ function PlaylistDetailsPage() {
       .catch(err => {
         console.error('Error loading playlist', err);
       });
-  }, [id]);  
+  }, [id]);
 
   const handleSave = async () => {
     try {
-      const res = await fetch(`/api/playlists/${id}/settings`, {
+      const res = await fetch(`${basePath}/api/playlists/${id}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -37,31 +41,31 @@ function PlaylistDetailsPage() {
           regex_filter: regex,
         }),
       });
-  
+
       if (!res.ok)
         throw new Error('Failed to save');
-      
+
       showToast('Settings saved!', 'success');
     }
     catch (err) {
       console.error(err);
       showToast('Error saving settings', 'error');
     }
-  };  
+  };
 
   const handleDelete = async () => {
     const confirmDelete = window.confirm('Are you sure you want to remove this playlist?'); // Todo: use DialogBase instead
     if (!confirmDelete)
       return;
-  
+
     try {
-      const res = await fetch(`/api/playlists/${id}`, {
+      const res = await fetch(`${basePath}/api/playlists/${id}`, {
         method: 'DELETE',
       });
-  
+
       if (!res.ok)
         throw new Error('Failed to delete');
-      
+
       showToast('Playlist removed', 'success');
       navigate('/'); //Navigate back to homepage
     }
@@ -69,7 +73,7 @@ function PlaylistDetailsPage() {
       console.error(err);
       showToast('Error deleting playlist', 'error');
     }
-  };  
+  };
 
   if (!playlist)
     return <p>Loading...</p>;
@@ -86,15 +90,17 @@ function PlaylistDetailsPage() {
           <div style={{ fontSize: 'small' }}>Delete</div>
         </button>
       </div>
-      <div style={{height: 425, width: '100%', backgroundImage: playlist.banner ? `url(https://wsrv.nl/?url=${playlist.banner})` : '', backgroundColor: 'rgb(0, 0, 0, 0.7)',
-                   backgroundSize: 'cover', backgroundBlendMode: 'darken'}}>
-        <div style={{height: 'calc(100% - 60px)', padding: 30, display: 'flex', gap: 40}}>
-          <Thumbnail className='playlistDetails-poster' height='350' width='350' src={playlist.thumbnail}/>
-          <div style={{display: 'flex', flexDirection: 'column', width: '100%'}}>
-            <div style={{fontSize: 'xxx-large', overflowWrap: 'anywhere'}} title={playlist.playlist_id}>{playlist.title}</div>
-            {!playlist.playlist_id.startsWith('UU') ? <div style={{fontStyle: 'italic', marginBottom: 10}}>{`By ${playlist.author_name}`}</div> : null}
+      <div style={{
+        height: 425, width: '100%', backgroundImage: playlist.banner ? `url(https://wsrv.nl/?url=${playlist.banner})` : '', backgroundColor: 'rgb(0, 0, 0, 0.7)',
+        backgroundSize: 'cover', backgroundBlendMode: 'darken'
+      }}>
+        <div style={{ height: 'calc(100% - 60px)', padding: 30, display: 'flex', gap: 40 }}>
+          <Thumbnail className='playlistDetails-poster' height='350' width='350' src={playlist.thumbnail} />
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+            <div style={{ fontSize: 'xxx-large', overflowWrap: 'anywhere' }} title={playlist.playlist_id}>{playlist.title}</div>
+            {!playlist.playlist_id.startsWith('UU') ? <div style={{ fontStyle: 'italic', marginBottom: 10 }}>{`By ${playlist.author_name}`}</div> : null}
             <div className='setting flex-column-mobile'>
-              <div style={{minWidth: 190}}>Check Interval (minutes):</div>
+              <div style={{ minWidth: 190 }}>Check Interval (minutes):</div>
               <input
                 type="number"
                 value={interval}
@@ -104,8 +110,8 @@ function PlaylistDetailsPage() {
               />
             </div>
             <div className='setting flex-column-mobile'>
-              <div style={{minWidth: 190}}>Regex Filter (optional):</div>
-              <div style={{display: 'flex', alignItems: 'center', width: '100%', marginTop: 5}}>
+              <div style={{ minWidth: 190 }}>Regex Filter (optional):</div>
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%', marginTop: 5 }}>
                 <input
                   type="text"
                   value={regex}
@@ -113,13 +119,13 @@ function PlaylistDetailsPage() {
                   style={{ width: 300, marginTop: 0 }}
                 />
                 <button
-                  style={{fontSize: 'medium', backgroundColor: 'cornflowerblue', borderRadius: 4, marginLeft: 5, height: 30}}
+                  style={{ fontSize: 'medium', backgroundColor: 'cornflowerblue', borderRadius: 4, marginLeft: 5, height: 30 }}
                   onClick={() => setTestingRegex(true)}>
                   Test
                 </button>
               </div>
             </div>
-          {/* Todo: allow overriding the feed url with a different url (eg rss-bridge) which can allow getting more than 15 items.
+            {/* Todo: allow overriding the feed url with a different url (eg rss-bridge) which can allow getting more than 15 items.
           HOWEVER, this might require custom parsing to get details like thumbnail (and I tested a rss-bridge URL for a playlist
           of 114 items - some rss-bridge instances timed out and some capped the return at 99 items).
           Looks like more can be provided via https://www.scriptbarrel.com/xml.cgi?channel_id=UCshoKvlZGZ20rVgazZp5vnQ&name=%40captainsparklez
@@ -157,10 +163,10 @@ function PlaylistDetailsPage() {
                   rel="noopener noreferrer"
                   style={{ flexShrink: 0 }}
                 >
-                  <Thumbnail src={video.thumbnail} placeholder='https://placehold.co/160x90?text=No+Thumbnail'/>
+                  <Thumbnail src={video.thumbnail} placeholder='https://placehold.co/160x90?text=No+Thumbnail' />
                 </a>
                 <div style={{ display: 'flex', flexDirection: 'column', padding: '10px' }}>
-                  <div style={{ 
+                  <div style={{
                     fontSize: '1em',
                     fontWeight: 'bold',
                     color: testingRegex ? new RegExp(regex, 'i').test(video.title) ? 'var(--success-color)' : 'var(--danger-color)' : 'inherit',
@@ -173,7 +179,7 @@ function PlaylistDetailsPage() {
                   }}>
                     {video.title}
                   </div>
-                  <div style={{flex: 1}}/>
+                  <div style={{ flex: 1 }} />
                   <div style={{ fontSize: '0.75em', color: '#aaa', marginTop: '4px' }}>
                     {new Date(video.published_at).toLocaleString()}
                   </div>

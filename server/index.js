@@ -20,9 +20,12 @@ const {
   insertSettings,
   getPostProcessors,
   insertPostProcessor,
+  updatePostProcessor,
   deletePostProcessor,
   getVideosForPlaylist
 } = require('./dbQueries');
+
+const basePath = process.env.PUBLIC_URL || '';
 
 const playlists = getPlaylists();
 for (const playlist of playlists) {
@@ -39,11 +42,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get('/api/playlists', (req, res) => {
+app.get(`${basePath}/api/playlists`, (req, res) => {
   res.json(getPlaylists());
 });
 
-app.post('/api/playlists', async (req, res) => {
+app.post(`${basePath}/api/playlists`, async (req, res) => {
   let { playlistId } = req.body;
   if (!/^(PL|UU|LL|FL)[\w-]{10,}$/.test(playlistId)) {
     return res.status(400).json({ error: 'Invalid playlist ID' });
@@ -69,7 +72,7 @@ app.post('/api/playlists', async (req, res) => {
       playlistDbId = info.lastInsertRowid;
 
       insertActivity(playlistId, playlist.title, `https://www.youtube.com/playlist?list=${playlistId}`, 'Playlist added (manual)', 'view-list');
-  
+
       // Fetch newly added playlist to pass into schedulePolling
       const newPlaylist = getPlaylist(playlistDbId);
       schedulePolling(newPlaylist);
@@ -87,7 +90,7 @@ app.post('/api/playlists', async (req, res) => {
   }
 });
 
-app.get('/api/playlists/:id', (req, res) => {
+app.get(`${basePath}/api/playlists/:id`, (req, res) => {
   const playlist = getPlaylist(req.params.id);
   if (!playlist)
     return res.status(404).json({ error: 'Not found' });
@@ -96,7 +99,7 @@ app.get('/api/playlists/:id', (req, res) => {
   res.json({ playlist, videos });
 });
 
-app.put('/api/playlists/:id/settings', (req, res) => {
+app.put(`${basePath}/api/playlists/:id/settings`, (req, res) => {
   const { check_interval_minutes, regex_filter } = req.body;
 
   const playlist = getPlaylist(req.params.id);
@@ -111,7 +114,7 @@ app.put('/api/playlists/:id/settings', (req, res) => {
   res.json({ success: true });
 });
 
-app.delete('/api/playlists/:id', (req, res) => {
+app.delete(`${basePath}/api/playlists/:id`, (req, res) => {
   const playlist = getPlaylist(req.params.id);
   if (!playlist) {
     return res.status(404).json({ error: 'Not found' });
@@ -127,10 +130,10 @@ app.delete('/api/playlists/:id', (req, res) => {
   res.json({ success: true });
 });
 
-app.get('/api/search', async (req, res) => {
+app.get(`${basePath}/api/search`, async (req, res) => {
   try {
     let playlistInfo;
-  
+
     const hasValidPlaylistId = query => /(UC|UU|PL|LL|FL)[\w-]{10,}/.test(query);
     if (hasValidPlaylistId(req.query.q)) {
       const adjustedPlaylistId = req.query.q.match(/(UC|UU|PL|LL|FL)[\w-]{10,}/)[0].replace(/^UC/, 'UU');
@@ -159,7 +162,7 @@ app.get('/api/search', async (req, res) => {
     else {
       throw new Error(`Could not understand '${req.query.q}'`);
     }
-  
+
     res.json(playlistInfo);
   }
   catch (err) {
@@ -168,7 +171,7 @@ app.get('/api/search', async (req, res) => {
   }
 });
 
-app.get('/api/activity/:page', (req, res) => {
+app.get(`${basePath}/api/activity/:page`, (req, res) => {
   const pageSize = 20;
 
   // Total count
@@ -192,12 +195,12 @@ app.get('/api/activity/:page', (req, res) => {
 
 // Sonarr general settings (apikey, urlbase, port, etc) are stored in C:\ProgramData\Sonarr\config.xml. Maybe we should do the same for our .env or something
 
-app.get('/api/settings', (req, res) => {
+app.get(`${basePath}/api/settings`, (req, res) => {
   const settings = Object.fromEntries(getSettings().map(row => [row.key, row.value]));
   res.json(settings);
 });
 
-app.put('/api/settings', (req, res) => {
+app.put(`${basePath}/api/settings`, (req, res) => {
   const settings = req.body;
 
   try {
@@ -210,11 +213,11 @@ app.put('/api/settings', (req, res) => {
   }
 });
 
-app.get('/api/postprocessors', (req, res) => {
+app.get(`${basePath}/api/postprocessors`, (req, res) => {
   res.json(getPostProcessors());
 });
 
-app.post('/api/postprocessors', (req, res) => {
+app.post(`${basePath}/api/postprocessors`, (req, res) => {
   const { name, type, target, data } = req.body;
   if (!name || !type || !target || !data)
     return res.status(400).json({ error: 'Missing fields' });
@@ -224,7 +227,7 @@ app.post('/api/postprocessors', (req, res) => {
   res.status(201).json({ success: true, id: result.lastInsertRowid });
 });
 
-app.put('/api/postprocessors/:id', (req, res) => {
+app.put(`${basePath}/api/postprocessors/:id`, (req, res) => {
   const { name, type, target, data } = req.body;
   if (!name || !type || !target || !data)
     return res.status(400).json({ error: 'Missing fields' });
@@ -233,19 +236,19 @@ app.put('/api/postprocessors/:id', (req, res) => {
 
   if (result.changes === 0)
     return res.status(404).json({ error: 'Not found' });
-  
+
   res.json({ success: true });
 });
 
-app.delete('/api/postprocessors/:id', (req, res) => {
+app.delete(`${basePath}/api/postprocessors/:id`, (req, res) => {
   const result = deletePostProcessor(req.params.id);
   if (result.changes === 0)
     return res.status(404).json({ error: 'Not found' });
-  
+
   res.json({ success: true });
 });
 
-app.post('/api/postprocessors/test', async (req, res) => {
+app.post(`${basePath}/api/postprocessors/test`, async (req, res) => {
   const { type, target, data } = req.body;
   if (!type || !target || !data)
     return res.status(400).json({ error: 'Missing fields' });
@@ -259,17 +262,17 @@ app.post('/api/postprocessors/test', async (req, res) => {
   }
 });
 
-app.get('/api/meta', (req, res) => {
+app.get(`${basePath}/api/meta`, (req, res) => {
   res.json(getMeta());
 })
 
 
 if (process.env.NODE_ENV === 'production') { // In production, allow the express server to serve both the api & the client UI
   // Serve static files from the React build folder
-  app.use(express.static(path.join(__dirname, '..', 'client', 'build')));
+  app.use(basePath, express.static(path.join(__dirname, '..', 'client', 'build')));
 
   // If React app uses client-side routing, fallback to index.html for all other routes
-  app.use((req, res, next) => {
+  app.use(basePath, (req, res, next) => {
     const accept = req.headers.accept || '';
     if (req.method === 'GET' && accept.includes('text/html')) {
       res.sendFile(path.resolve(__dirname, '..', 'client', 'build', 'index.html'));
